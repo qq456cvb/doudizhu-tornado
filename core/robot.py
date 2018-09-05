@@ -73,10 +73,9 @@ class AiPlayer(Player):
         IOLoop.current().add_callback(self.to_server, packet)
 
     def auto_shot_poker(self):
-        pokers = []
 
-        def to_char(pokers):
-            cards = rule._to_cards(pokers)
+        def to_char(cards):
+            cards = rule._to_cards(cards)
             for i, card in enumerate(cards):
                 if card == 'w':
                     cards[i] = '*'
@@ -87,8 +86,9 @@ class AiPlayer(Player):
             return cards
         handcards_char = to_char(self.hand_pokers)
         last_cards_char = to_char(self.table.last_shot_poker)
-        print(handcards_char)
-        print(last_cards_char)
+        # last_cards_char = ['10', 'J', 'Q', 'K', 'A']
+        # print(handcards_char)
+        # print(last_cards_char)
         if self.table.last_shot_seat == self.seat:
             last_cards_char = []
 
@@ -109,9 +109,10 @@ class AiPlayer(Player):
         # print(self.hand_pokers)
         # print(self.table.players[self.seat].hand_pokers)
         intention = self.predictor.predict(handcards_char, last_cards_char, prob_state)
-        print(intention)
+        # print(intention)
 
         def to_pokers(cards):
+            cards = cards.copy()
             for i, card in enumerate(cards):
                 if card == '*':
                     cards[i] = 'w'

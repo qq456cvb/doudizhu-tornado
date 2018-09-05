@@ -331,7 +331,10 @@ class CardGroup:
 
     @staticmethod
     def to_cardgroup(cards):
-        candidates = CardGroup.analyze(cards)
+        try:
+            candidates = CardGroup.analyze(cards)
+        except:
+            raise Exception('analyze error', cards)
         for c in candidates:
             if len(c.cards) == len(cards):
                 return c
