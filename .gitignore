@@ -44,3 +44,6 @@ coverage.xml
 
 # personal file
 base.py
+predictor.py
+DQNModel.py
+
