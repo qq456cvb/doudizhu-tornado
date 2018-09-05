@@ -30,6 +30,7 @@ class Table(object):
         self.whose_turn = 0
         self.last_shot_seat = 0
         self.last_shot_poker = []
+        self.history = [None, None, None]
         if room.allow_robot:
             IOLoop.current().call_later(0.1, self.ai_join, nth=1)
 
@@ -108,6 +109,7 @@ class Table(object):
             if not p:
                 player.seat = i
                 self.players[i] = player
+                self.history[i] = []
                 break
         self.sync_table()
 
@@ -115,6 +117,7 @@ class Table(object):
         for i, p in enumerate(self.players):
             if p == player:
                 self.players[i] = None
+                self.history[i] = None
                 break
 
     def on_game_over(self, winner):
@@ -135,6 +138,7 @@ class Table(object):
         for i, p in enumerate(self.players):
             if p and p.uid == player.uid:
                 self.players[i] = None
+                self.history[i] = None
         else:
             logger.error('Player[%d] NOT IN Table[%d]', player.uid, self.uid)
 
