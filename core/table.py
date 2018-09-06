@@ -44,6 +44,9 @@ class Table(object):
         self.last_shot_seat = 0
         self.last_shot_poker = []
         self.players[0].send([Pt.RSP_RESTART])
+        for h in self.history:
+            if h is not None:
+                h.clear()
         for player in self.players:
             # player.join_table(self)
             player.reset()

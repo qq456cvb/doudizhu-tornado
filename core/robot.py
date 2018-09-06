@@ -24,7 +24,7 @@ class AiPlayer(Player):
         self.room = player.room
         self.predictor = Predictor(OfflinePredictor(PredictConfig(
             model=Model(),
-            session_init=SaverRestore('C:/Users/44762/PycharmProjects/doudizhu-tornado/core/res/model-92500'),
+            session_init=SaverRestore('C:/Users/44762/PycharmProjects/doudizhu-tornado/core/res/model-240000'),
             input_names=['state', 'comb_mask', 'fine_mask'],
             output_names=['Qvalue']
         )))
