@@ -118,6 +118,8 @@ class SocketHandler(WebSocketHandler):
             for p in self.player.table.players:
                 if not isinstance(p, AiPlayer):
                     p.send([Pt.RSP_Q_FINE, packet[1:]])
+        elif code == Pt.REQ_RESTART:
+            self.player.table.reset()
         else:
             logger.info('UNKNOWN PACKET: %s', code)
 

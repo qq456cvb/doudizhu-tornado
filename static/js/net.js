@@ -39,6 +39,9 @@ PG.Protocol = {
     REQ_CHAT : 43,
     RSP_CHAT : 44,
 
+    REQ_RESTART : 45,
+    RSP_RESTART : 46,
+    
     REQ_Q_COMB : 51,
     RSP_Q_COMB : 52,
 
