@@ -41,6 +41,17 @@ PG.Player.prototype.updateInfo = function (uid, name) {
     }
 };
 
+PG.Player.prototype.cleanPokers = function () {
+
+    var length = this.pokerInHand.length;
+    for (var i = 0; i < length; i++) {
+        var pid = this.pokerInHand[i];
+        var p = this.findAPoker(pid);
+        p.kill();
+        }
+    this.pokerInHand = [];
+}
+
 PG.Player.prototype.initShotLayer = function () {
     this.shotLayer = this.game.add.group();
     var group = this.shotLayer;
