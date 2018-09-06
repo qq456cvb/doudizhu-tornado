@@ -7,6 +7,7 @@ from tornado.web import authenticated
 from tornado.websocket import WebSocketHandler, WebSocketClosedError
 
 from core.player import Player
+from core.robot import AiPlayer
 from core.room import RoomManager, Room
 from db import torndb
 from .protocol import Protocol as Pt
@@ -109,6 +110,14 @@ class SocketHandler(WebSocketHandler):
             self.handle_chat(packet)
         elif code == Pt.REQ_CHEAT:
             self.handle_cheat(packet[1])
+        elif code == Pt.REQ_Q_COMB:
+            for p in self.player.table.players:
+                if not isinstance(p, AiPlayer):
+                    p.send([Pt.RSP_Q_COMB, packet[1:]])
+        elif code == Pt.REQ_Q_FINE:
+            for p in self.player.table.players:
+                if not isinstance(p, AiPlayer):
+                    p.send([Pt.RSP_Q_FINE, packet[1:]])
         else:
             logger.info('UNKNOWN PACKET: %s', code)
 

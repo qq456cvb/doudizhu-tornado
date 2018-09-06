@@ -133,8 +133,16 @@ PG.Game.prototype = {
                 this.players[seat].replacePoker(packet[2], 0);
                 this.players[seat].reDealPoker();
                 break;
+            case PG.Protocol.RSP_Q_COMB:
+                var combinations = packet[1][0];
+                draw_comb(combinations);
+                break;
+            case PG.Protocol.RSP_Q_FINE:
+                var groups = packet[1][0];
+                draw_fine(groups);
+                break;
             default:
-                console.log("UNKNOWN PACKET:", packet)
+                console.log("UNKNOWN PACKET:", packet);
 	    }
 	},
 	

@@ -10,6 +10,7 @@ from tensorpack import *
 from core.DQNModel import Model
 from handlers.protocol import Protocol as Pt
 import numpy as np
+import collections
 from core.extra.card import Card
 
 logger = logging.getLogger('ddz')
@@ -63,6 +64,10 @@ class AiPlayer(Player):
         elif code == Pt.RSP_GAME_OVER:
             winner = packet[1]
             coin = packet[2]
+        elif code == Pt.RSP_Q_COMB:
+            pass
+        elif code == Pt.RSP_Q_FINE:
+            pass
         else:
             logger.info('AI ERROR PACKET: %s', packet)
 
@@ -108,7 +113,7 @@ class AiPlayer(Player):
         # print(self.table.last_shot_poker)
         # print(self.hand_pokers)
         # print(self.table.players[self.seat].hand_pokers)
-        intention = self.predictor.predict(handcards_char, last_cards_char, prob_state)
+        intention, combs, groups = self.predictor.predict(handcards_char, last_cards_char, prob_state)
         # print(intention)
 
         def to_pokers(cards):
@@ -121,6 +126,21 @@ class AiPlayer(Player):
                 elif card == '10':
                     cards[i] = '0'
             return rule._to_pokers(self.hand_pokers, cards)
+        top_k = 5
+        top_combs = combs[:top_k]
+        a, q = zip(*top_combs)
+        for comb in a:
+            test = []
+            for i, c in enumerate(comb):
+                test += c
+                if collections.Counter(test) == collections.Counter(handcards_char):
+                    del comb[i+1:]
+                    break
+        top_combs = list(zip([[to_pokers(c) for c in comb] for comb in a], q))
+        top_groups = groups[:top_k]
+        a, q = zip(*top_groups)
+        top_groups = list(zip([to_pokers(g) for g in a], q))
+
         # if not self.table.last_shot_poker or self.table.last_shot_seat == self.seat:
         #     pokers.append(self.hand_pokers[0])
         # else:
@@ -128,5 +148,12 @@ class AiPlayer(Player):
         pokers = to_pokers(intention)
         packet = [Pt.REQ_SHOT_POKER, pokers]
         # IOLoop.current().add_callback(self.to_server, packet)
+        packet_comb = [Pt.REQ_Q_COMB, top_combs]
+        packet_fine = [Pt.REQ_Q_FINE, top_groups]
+        IOLoop.current().call_later(1, self.to_server, packet_comb)
+        IOLoop.current().call_later(2, self.to_server, packet_fine)
+
         IOLoop.current().call_later(2, self.to_server, packet)
+
+
 
