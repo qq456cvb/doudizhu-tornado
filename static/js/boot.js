@@ -93,17 +93,17 @@ PG.MainMenu = {
         var bg = this.game.add.sprite(this.game.width / 2, 0, 'bg');
         bg.anchor.set(0.5, 0);
 
-        var aiRoom = this.game.add.button(this.game.world.width / 2, this.game.world.height / 4, 'btn', this.gotoAiRoom, this, 'quick.png', 'quick.png', 'quick.png');
+        var aiRoom = this.game.add.button(this.game.world.width / 2, this.game.world.height / 2, 'btn', this.gotoAiRoom, this, 'quick.png', 'quick.png', 'quick.png');
         aiRoom.anchor.set(0.5);
         this.game.world.add(aiRoom);
 
-        var humanRoom = this.game.add.button(this.game.world.width / 2, this.game.world.height / 2, 'btn', this.gotoRoom, this, 'start.png', 'start.png', 'start.png');
-        humanRoom.anchor.set(0.5);
-        this.game.world.add(humanRoom);
+//        var humanRoom = this.game.add.button(this.game.world.width / 2, this.game.world.height / 2, 'btn', this.gotoRoom, this, 'start.png', 'start.png', 'start.png');
+//        humanRoom.anchor.set(0.5);
+//        this.game.world.add(humanRoom);
 
-        var setting = this.game.add.button(this.game.world.width / 2, this.game.world.height * 3 / 4, 'btn', this.gotoSetting, this, 'setting.png', 'setting.png', 'setting.png');
-        setting.anchor.set(0.5);
-        this.game.world.add(setting);
+//        var setting = this.game.add.button(this.game.world.width / 2, this.game.world.height * 3 / 4, 'btn', this.gotoSetting, this, 'setting.png', 'setting.png', 'setting.png');
+//        setting.anchor.set(0.5);
+//        this.game.world.add(setting);
 
         var style = {font: "28px Arial", fill: "#fff", align: "right"};
         var text = this.game.add.text(this.game.world.width - 4, 4, "欢迎回来 " + PG.playerInfo.username, style);
