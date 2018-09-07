@@ -5,6 +5,14 @@ from tornado.websocket import WebSocketHandler
 
 from core import rule
 from handlers.protocol import Protocol as Pt
+import os
+import sys
+if os.name == 'nt':
+    sys.path.insert(0, './build/Release')
+else:
+    sys.path.insert(0, './build.linux')
+from env import Env
+from core.extra.card import Card
 
 logger = logging.getLogger('ddz')
 
@@ -31,6 +39,27 @@ class Player(object):
         self.is_called = False
         self.role = FARMER
         self.hand_pokers: List[int] = []
+
+    def evaluate_hand_score(self):
+        def to_char(cards):
+            cards = rule._to_cards(cards)
+            for i, card in enumerate(cards):
+                if card == 'w':
+                    cards[i] = '*'
+                elif card == 'W':
+                    cards[i] = '$'
+                elif card == '0':
+                    cards[i] = '10'
+            return cards
+        cards_value, _ = Env.get_cards_value(Card.char2color(to_char(self.hand_pokers)))
+        if cards_value < 7:
+            return 0
+        elif cards_value < 10:
+            return 1
+        elif cards_value < 14:
+            return 2
+        else:
+            return 3
 
     def send(self, packet):
         self.socket.write_message(packet)
