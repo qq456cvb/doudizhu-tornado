@@ -1,5 +1,6 @@
 import json
 import logging
+import os
 
 from tornado.ioloop import IOLoop
 
@@ -12,6 +13,7 @@ from handlers.protocol import Protocol as Pt
 import numpy as np
 import collections
 from core.extra.card import Card
+from settings.base import project_path
 
 logger = logging.getLogger('ddz')
 
@@ -24,7 +26,7 @@ class AiPlayer(Player):
         self.room = player.room
         self.predictor = Predictor(OfflinePredictor(PredictConfig(
             model=Model(),
-            session_init=SaverRestore('C:/Users/44762/PycharmProjects/doudizhu-tornado/core/res/model-240000'),
+            session_init=SaverRestore(os.path.join(project_path, 'core/res/model-240000')),
             input_names=['state', 'comb_mask', 'fine_mask'],
             output_names=['Qvalue']
         )))
@@ -62,8 +64,7 @@ class AiPlayer(Player):
             if self.table.turn_player == self:
                 self.auto_shot_poker()
         elif code == Pt.RSP_GAME_OVER:
-            winner = packet[1]
-            coin = packet[2]
+            pass
         elif code == Pt.RSP_Q_COMB:
             pass
         elif code == Pt.RSP_Q_FINE:
@@ -74,7 +75,8 @@ class AiPlayer(Player):
     def auto_call_score(self, score=0):
         # millis = random.randint(1000, 2000)
         # score = random.randint(min_score + 1, 3)
-        packet = [Pt.REQ_CALL_SCORE, self.table.call_score + 1]
+        score = self.evaluate_hand_score()
+        packet = [Pt.REQ_CALL_SCORE, score]
         IOLoop.current().add_callback(self.to_server, packet)
 
     def auto_shot_poker(self):

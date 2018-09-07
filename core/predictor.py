@@ -1,10 +1,12 @@
 from tensorpack import *
 import os, sys
 
+from settings.base import project_path
+
 if os.name == 'nt':
     sys.path.insert(0, 'C:/Users/44762/PycharmProjects/doudizhu-tornado/core/build/Release')
 else:
-    sys.path.insert(0, './build.linux')
+    sys.path.insert(0, os.path.join(project_path, 'core/build/Release'))
 from env import get_combinations_nosplit, get_combinations_recursive
 from core.extra.utils import to_char
 from core.extra.card import Card, action_space, action_space_onehot60, Category, CardGroup, augment_action_space_onehot60, augment_action_space, clamp_action_idx
@@ -20,7 +22,7 @@ class Predictor:
     def __init__(self, predictor):
         self.predictor = predictor
         self.num_actions = [100, 21]
-        self.encoding = np.load('C:/Users/44762/PycharmProjects/doudizhu-tornado/core/res/encoding.npy')
+        self.encoding = np.load(os.path.join(project_path, 'core/res/encoding.npy'))
         assert self.encoding.shape[0] == 13527
         print('predictor loaded')
 

@@ -137,8 +137,10 @@ PG.Game.prototype = {
 
                 function gameOver() {
                     alert(this.players[this.whoseTurn].isLandlord ? "地主赢" : "农民赢");
-                    PG.Socket.send([PG.Protocol.REQ_RESTART]);
                     this.cleanWorld();
+                    PG.Socket.send([PG.Protocol.REQ_RESTART]);
+
+
                 }
                 this.game.time.events.add(3000, gameOver, this);
                 break;
@@ -201,6 +203,7 @@ PG.Game.prototype = {
             //this.players[i].uiHead.kill();
             this.players[i].updateInfo(player_id[i], ' ');
         }
+        btn.parent.destroy();
 
         // this.send_message([PG.Protocol.REQ_DEAL_POKEER, -1]);
 //        PG.Socket.send([PG.Protocol.REQ_JOIN_TABLE, this.tableId]);
@@ -329,6 +332,16 @@ PG.Game.prototype = {
                 this.game.time.events.add(1000, this.startPlay, this);
             }
         }
+    },
+
+    showRestartBtn: function () {
+        var step = this.game.world.width / 4;
+        var sx = this.game.world.width / 2 - step / 2;
+        var sy = this.game.world.height * 0.6;
+        var group = this.game.add.group();
+        var game_continue = this.game.make.button(sx, sy, "btn", this.restart, this, 'quick.png', 'quick.png', 'quick.png');
+        game_continue.anchor.set(0.5, 0);
+        group.add(game_continue);
     },
 
     startCallScore: function(minscore) {

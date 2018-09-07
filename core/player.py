@@ -2,7 +2,7 @@ import logging
 from typing import List
 
 from tornado.websocket import WebSocketHandler
-
+from settings.base import project_path
 from core import rule
 from handlers.protocol import Protocol as Pt
 import os
@@ -10,7 +10,7 @@ import sys
 if os.name == 'nt':
     sys.path.insert(0, './build/Release')
 else:
-    sys.path.insert(0, './build.linux')
+    sys.path.insert(0, os.path.join(project_path, 'core/build/Release'))
 from env import Env
 from core.extra.card import Card
 

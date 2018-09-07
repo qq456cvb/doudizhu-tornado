@@ -10,4 +10,4 @@ Author : Liangwei Li
 """
 import random
 
-over_in_advance = 100
+over_in_advance = 110
