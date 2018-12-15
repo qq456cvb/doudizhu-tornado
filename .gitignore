@@ -42,5 +42,5 @@ nosetests.xml
 coverage.xml
 *,cover
 
-# personal file
-base.py
+**/TensorPack
+

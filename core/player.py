@@ -25,6 +25,7 @@ class Player(object):
         self.is_called = False
         self.role = FARMER
         self.hand_pokers: List[int] = []
+        self.become_controller = False
 
     def reset(self):
         self.ready = False
@@ -64,6 +65,8 @@ class Player(object):
             self.table.call_score_end()
 
     def handle_shot_poker(self, pokers):
+        self.become_controller = False
+        self.table.out_cards[self.table.whose_turn] = pokers
         if pokers:
             if not rule.is_contains(self.hand_pokers, pokers):
                 logger.warning('Player[%d] play non-exist poker', self.uid)
@@ -73,6 +76,7 @@ class Player(object):
                 logger.warning('Player[%d] play small than last shot poker', self.uid)
                 return
         if pokers:
+            self.become_controller = True
             self.table.history[self.seat] += pokers
             self.table.last_shot_seat = self.seat
             self.table.last_shot_poker = pokers
@@ -111,4 +115,4 @@ class Player(object):
         return self.__str__()
 
     def __str__(self):
-        return self.uid + '-' + self.name
+        return str(self.uid) + '-' + self.name

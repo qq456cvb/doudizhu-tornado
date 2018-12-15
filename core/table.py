@@ -6,9 +6,32 @@ from tornado.ioloop import IOLoop
 
 from core.robot import AiPlayer
 from handlers.protocol import Protocol as Pt
+from core.predictor import Predictor
+from tensorpack import *
+from core.DQNModel import Model
 
 logger = logging.getLogger('ddz')
 
+
+BATCH_SIZE = 8
+MAX_NUM_COMBS = 100
+MAX_NUM_GROUPS = 21
+ATTEN_STATE_SHAPE = 60
+HIDDEN_STATE_DIM = 256 + 256 * 2 + 120
+STATE_SHAPE = (MAX_NUM_COMBS, MAX_NUM_GROUPS, HIDDEN_STATE_DIM)
+ACTION_REPEAT = 4   # aka FRAME_SKIP
+UPDATE_FREQ = 4
+
+GAMMA = 0.99
+
+MEMORY_SIZE = 3e3
+INIT_MEMORY_SIZE = MEMORY_SIZE // 10
+STEPS_PER_EPOCH = 10000 // UPDATE_FREQ  # each epoch is 100k played frames
+EVAL_EPISODE = 50
+
+NUM_ACTIONS = None
+METHOD = None
+MODEL_PATH = '/home/neil/PycharmProjects/doudizhu-tornado/TensorPack/MA_Hierarchical_Q/train_log/model-500000'
 
 class Table(object):
 
@@ -29,12 +52,16 @@ class Table(object):
         self.max_call_score_turn = 0
         self.whose_turn = 0
         self.last_shot_seat = 0
+        self.out_cards = [[] for _ in range(3)]
+        self.controller = None
         self.last_shot_poker = []
         self.history = [None, None, None]
         if room.allow_robot:
             IOLoop.current().call_later(0.1, self.ai_join, nth=1)
 
     def reset(self):
+        self.out_cards = [[] for _ in range(3)]
+        self.controller = None
         self.pokers: List[int] = []
         self.multiple = 1
         self.call_score = 0
@@ -108,11 +135,53 @@ class Table(object):
         for p in self.players:
             p.send(response)
         logger.info('Player[%d] IS LANDLORD[%s]', self.turn_player.uid, str(self.pokers))
+        # assign models for AI
+        this_agent_idx = 0
+        next_agent_idx = 0
+        if self.turn_player.uid == 11:
+            this_agent_idx = self.whose_turn
+            while self.players[next_agent_idx].uid != 12:
+                next_agent_idx += 1
+            this_agent_name = 'agent1'
+            next_agent_name = 'agent2'
+        elif self.turn_player == 12:
+            this_agent_idx = self.whose_turn
+            while self.players[next_agent_idx].uid != 11:
+                next_agent_idx += 1
+            this_agent_name = 'agent1'
+            next_agent_name = 'agent3'
+        else:
+            while self.players[next_agent_idx].uid != 12:
+                next_agent_idx += 1
+            while self.players[this_agent_idx].uid != 11:
+                this_agent_idx += 1
+            this_agent_name = 'agent2'
+            next_agent_name = 'agent3'
+
+        agent_names = ['agent%d' % i for i in range(1, 4)]
+        self.players[this_agent_idx].predictor = Predictor(OfflinePredictor(PredictConfig(
+            model=Model(agent_names, STATE_SHAPE, METHOD, NUM_ACTIONS, GAMMA),
+            session_init=SaverRestore(MODEL_PATH),
+            input_names=[this_agent_name + '/state', this_agent_name + '_comb_mask', this_agent_name + '/fine_mask'],
+            output_names=[this_agent_name + '/Qvalue']
+        )))
+        self.players[next_agent_idx].predictor = Predictor(OfflinePredictor(PredictConfig(
+            model=Model(agent_names, STATE_SHAPE, METHOD, NUM_ACTIONS, GAMMA),
+            session_init=SaverRestore(MODEL_PATH),
+            input_names=[next_agent_name + '/state', next_agent_name + '_comb_mask', next_agent_name + '/fine_mask'],
+            output_names=[next_agent_name + '/Qvalue']
+        )))
 
     def go_next_turn(self):
+        if self.turn_player.become_controller:
+            self.controller = self.turn_player
         self.whose_turn += 1
         if self.whose_turn == 3:
             self.whose_turn = 0
+
+    def get_last_two_cards(self):
+        return [self.out_cards[(self.whose_turn + 2) % 3],
+                self.out_cards[(self.whose_turn + 1) % 3]]
 
     @property
     def turn_player(self):

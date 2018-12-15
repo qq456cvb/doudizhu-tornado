@@ -11,6 +11,7 @@ from core.DQNModel import Model
 from handlers.protocol import Protocol as Pt
 import numpy as np
 import collections
+
 from core.extra.card import Card
 
 logger = logging.getLogger('ddz')
@@ -22,12 +23,7 @@ class AiPlayer(Player):
         from handlers.loopback import LoopBackSocketHandler
         super().__init__(uid, username, LoopBackSocketHandler(self))
         self.room = player.room
-        self.predictor = Predictor(OfflinePredictor(PredictConfig(
-            model=Model(),
-            session_init=SaverRestore('C:/Users/44762/PycharmProjects/doudizhu-tornado/core/res/model-240000'),
-            input_names=['state', 'comb_mask', 'fine_mask'],
-            output_names=['Qvalue']
-        )))
+        self.predictor = None
 
     def to_server(self, message):
         packet = json.dumps(message)
@@ -47,14 +43,13 @@ class AiPlayer(Player):
             if self.uid == packet[1]:
                 self.auto_call_score()
         elif code == Pt.RSP_CALL_SCORE:
+
             if self.table.turn_player == self:
                 # caller = packet[1]
                 # score = packet[2]
                 call_end = packet[3]
                 if not call_end:
                     self.auto_call_score()
-                else:
-                    self.auto_shot_poker()
         elif code == Pt.RSP_SHOW_POKER:
             if self.table.turn_player == self:
                 self.auto_shot_poker()
@@ -78,7 +73,7 @@ class AiPlayer(Player):
         IOLoop.current().add_callback(self.to_server, packet)
 
     def auto_shot_poker(self):
-
+        print(self, 'shot poker')
         def to_char(cards):
             cards = rule._to_cards(cards)
             for i, card in enumerate(cards):
@@ -90,12 +85,13 @@ class AiPlayer(Player):
                     cards[i] = '10'
             return cards
         handcards_char = to_char(self.hand_pokers)
-        last_cards_char = to_char(self.table.last_shot_poker)
-        # last_cards_char = ['10', 'J', 'Q', 'K', 'A']
-        # print(handcards_char)
-        # print(last_cards_char)
-        if self.table.last_shot_seat == self.seat:
-            last_cards_char = []
+        last_two_cards = self.table.get_last_two_cards()
+        last_two_cards = [to_char(c) for c in last_two_cards]
+        # # last_cards_char = ['10', 'J', 'Q', 'K', 'A']
+        # # print(handcards_char)
+        # # print(last_cards_char)
+        # if self.table.last_shot_seat == self.seat:
+        #     last_cards_char = []
 
         total_cards = np.ones([60])
         total_cards[53:56] = 0
@@ -113,7 +109,7 @@ class AiPlayer(Player):
         # print(self.table.last_shot_poker)
         # print(self.hand_pokers)
         # print(self.table.players[self.seat].hand_pokers)
-        intention, combs, groups = self.predictor.predict(handcards_char, last_cards_char, prob_state)
+        intention, combs, groups = self.predictor.predict(handcards_char, last_two_cards, prob_state)
         # print(intention)
 
         def to_pokers(cards):
@@ -136,10 +132,13 @@ class AiPlayer(Player):
                 if collections.Counter(test) == collections.Counter(handcards_char):
                     del comb[i+1:]
                     break
-        top_combs = list(zip([[to_pokers(c) for c in comb] for comb in a], q))
+        top_combs = sorted(list(zip([[to_pokers(c) for c in comb] for comb in a], q)), key=lambda x: x[1], reverse=True)
+        # print(top_combs)
         top_groups = groups[:top_k]
         a, q = zip(*top_groups)
-        top_groups = list(zip([to_pokers(g) for g in a], q))
+        top_groups = sorted(list(zip([to_pokers(g) for g in a], q)), key=lambda x: x[1], reverse=True)
+        top_groups = list(filter(lambda x: x[1] > -100, top_groups))
+        # print(top_groups)
 
         # if not self.table.last_shot_poker or self.table.last_shot_seat == self.seat:
         #     pokers.append(self.hand_pokers[0])
