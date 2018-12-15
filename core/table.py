@@ -51,6 +51,7 @@ class Table(object):
         self.max_call_score = 0
         self.max_call_score_turn = 0
         self.whose_turn = 0
+        self.lord_turn = 0
         self.last_shot_seat = 0
         self.out_cards = [[] for _ in range(3)]
         self.controller = None
@@ -68,6 +69,7 @@ class Table(object):
         self.max_call_score = 0
         self.max_call_score_turn = 0
         self.whose_turn = random.randint(0, 2)
+        self.lord_turn = 0
         self.last_shot_seat = 0
         self.last_shot_poker = []
         self.players[0].send([Pt.RSP_RESTART])
@@ -174,7 +176,7 @@ class Table(object):
 
     def go_next_turn(self):
         if self.turn_player.become_controller:
-            self.controller = self.turn_player
+            self.controller = self.whose_turn
         self.whose_turn += 1
         if self.whose_turn == 3:
             self.whose_turn = 0

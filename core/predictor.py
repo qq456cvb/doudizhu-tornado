@@ -9,7 +9,7 @@ sys.path.insert(0, '/home/neil/PycharmProjects/doudizhu-tornado/build')
 from env import get_combinations_nosplit, get_combinations_recursive
 from logger import Logger
 from utils import to_char
-from card import Card, action_space, action_space_onehot60, Category, CardGroup, augment_action_space_onehot60, augment_action_space, clamp_action_idx
+from core.extra.card import Card, action_space, action_space_onehot60, Category, CardGroup, augment_action_space_onehot60, augment_action_space, clamp_action_idx
 import numpy as np
 import tensorflow as tf
 from utils import get_mask, get_minor_cards, train_fake_action_60, get_masks, test_fake_action
@@ -173,7 +173,19 @@ class Predictor:
         # print(q_values)
         action = np.argmax(q_values)
         assert action < self.num_actions[0]
-        combs = list(zip(available_actions, q_values.tolist()))
+        sorted_idx = np.argsort(q_values)
+        combinations = [(available_actions[i], np.float64(q_values[i])) for i in reversed(sorted_idx)]
+
+        def filter_dup(aqs):
+            unique_a = []
+            unique_combinations = []
+            for i, aq in enumerate(aqs):
+                try:
+                    unique_a.index(aq[0])
+                except ValueError:
+                    unique_a.append(aq[0])
+                    unique_combinations.append(aq)
+            return unique_combinations
 
         # second hierarchy
         state, available_actions, fine_mask = self.get_state_and_action_space(False, cand_state=state, cand_actions=available_actions, action=action, fine_mask=fine_mask)
@@ -187,9 +199,9 @@ class Predictor:
             # assert np.all(q_values[np.where(np.logical_not(fine_mask))[0]] < -100)
             # q_values[np.where(np.logical_not(fine_mask))[0]] = np.nan
         action = np.nanargmax(q_values)
-        # print(q_values)
         assert action < self.num_actions[1]
-        fines = list(zip(available_actions, q_values.tolist()))
+        sorted_idx = np.argsort(q_values)
+        groups = [(available_actions[i], np.float64(q_values[i])) for i in reversed(sorted_idx) if q_values[i] > -100]
 
         intention = available_actions[action]
-        return intention, combs, fines
+        return intention, filter_dup(combinations), filter_dup(groups)

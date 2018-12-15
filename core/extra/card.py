@@ -5,6 +5,7 @@ import itertools
 import functools
 import math
 
+
 # Category = Enum('Category', 'EMPTY SINGLE DOUBLE TRIPLE QUADRIC THREE_ONE THREE_TWO SINGLE_LINE DOUBLE_LINE \
 #     TRIPLE_LINE THREE_ONE_LINE THREE_TWO_LINE BIGBANG FOUR_TWO', start=0)
 
@@ -37,27 +38,27 @@ def get_action_space():
     # max_cards = 20
     # single
     temp = len(actions)
-    for card in Card.cards: # 15
+    for card in Card.cards:  # 15
         actions.append([card])
     Category2Range.append([temp, len(actions)])
     temp = len(actions)
     # print(len(actions))
     # pair
-    for card in Card.cards: # 13
+    for card in Card.cards:  # 13
         if card != '*' and card != '$':
             actions.append([card] * 2)
     # print(len(actions))
     Category2Range.append([temp, len(actions)])
     temp = len(actions)
     # triple
-    for card in Card.cards: # 13
+    for card in Card.cards:  # 13
         if card != '*' and card != '$':
             actions.append([card] * 3)
     # print(len(actions))
     Category2Range.append([temp, len(actions)])
     temp = len(actions)
     # bomb
-    for card in Card.cards: # 13
+    for card in Card.cards:  # 13
         if card != '*' and card != '$':
             actions.append([card] * 4)
     Category2Range.append([temp, len(actions)])
@@ -182,7 +183,7 @@ class Card:
             else:
                 subvec = np.zeros(4)
                 subvec[:counts[x]] = 1
-                onehot[Card.cards_to_onehot_idx[x]:Card.cards_to_onehot_idx[x]+4] = subvec
+                onehot[Card.cards_to_onehot_idx[x]:Card.cards_to_onehot_idx[x] + 4] = subvec
         return onehot
 
     @staticmethod
@@ -208,7 +209,7 @@ class Card:
             idx = (x - 3) * 4
             subvec = np.zeros(4)
             subvec[:counts[x]] = 1
-            onehot[idx:idx+4] = subvec
+            onehot[idx:idx + 4] = subvec
         return onehot
 
     # convert char to 0-56 color cards
@@ -222,7 +223,7 @@ class Card:
                 ind += 1
             mask[ind] = 1
             result[i] = ind
-            
+
         return result
 
     @staticmethod
@@ -290,37 +291,35 @@ class Card:
             return cards
         else:
             return Card.value_to_cards[values]
-    
+
     @staticmethod
     def to_cards_from_3_17(values):
-        return Card.np_cards[values-3].tolist()
+        return Card.np_cards[values - 3].tolist()
 
 
 class CardGroup:
-    def __init__(self, cards, t, val):
+    def __init__(self, cards, t, val, len=1):
         self.type = t
         self.cards = cards
         self.value = val
-
-    def __len__(self):
-        return len(self.cards)
+        self.len = len
 
     def bigger_than(self, g):
-        if self.type == 'empty':
-            return g.type != 'empty'
-        if g.type == 'empty':
+        if self.type == Category.EMPTY:
+            return g.type != Category.EMPTY
+        if g.type == Category.EMPTY:
             return True
-        if g.type == 'bigbang':
+        if g.type == Category.BIGBANG:
             return False
-        if self.type == 'bigbang':
+        if self.type == Category.BIGBANG:
             return True
-        if g.type == 'bomb':
-            if self.type == 'bomb' and self.value > g.value:
+        if g.type == Category.QUADRIC:
+            if self.type == Category.QUADRIC and self.value > g.value:
                 return True
             else:
                 return False
-        if self.type == 'bomb' or \
-                (self.type == g.type and len(self) == len(g) and self.value > g.value):
+        if self.type == Category.QUADRIC or \
+                (self.type == g.type and self.len == g.len and self.value > g.value):
             return True
         else:
             return False
@@ -331,10 +330,7 @@ class CardGroup:
 
     @staticmethod
     def to_cardgroup(cards):
-        try:
-            candidates = CardGroup.analyze(cards)
-        except:
-            raise Exception('analyze error', cards)
+        candidates = CardGroup.analyze(cards)
         for c in candidates:
             if len(c.cards) == len(cards):
                 return c
@@ -357,11 +353,11 @@ class CardGroup:
         # return cnt
         spec = False
         for c in cand:
-            if c.type == 'triple_seq' or c.type == 'triple+single' or \
-                    c.type == 'triple+double' or c.type == 'quadric+singles' or \
-                    c.type == 'quadric+doubles' or c.type == 'triple_seq+singles' or \
-                    c.type == 'triple_seq+doubles' or c.type == 'single_seq' or \
-                    c.type == 'double_seq':
+            if c.type == Category.TRIPLE_LINE or c.type == Category.THREE_ONE or \
+                    c.type == Category.THREE_TWO or c.type == Category.FOUR_TAKE_ONE or \
+                    c.type == Category.FOUR_TAKE_TWO or c.type == Category.THREE_ONE_LINE or \
+                    c.type == Category.THREE_TWO_LINE or c.type == Category.SINGLE_LINE or \
+                    c.type == Category.DOUBLE_LINE:
                 spec = True
                 remain = list(cards)
                 for card in c.cards:
@@ -376,13 +372,13 @@ class CardGroup:
     def analyze(cards):
         cards = list(cards)
         if len(cards) == 0:
-            return [CardGroup([], 'empty', 0)]
+            return [CardGroup([], Category.EMPTY, 0)]
         candidates = []
 
         # TODO: this does not rule out Nuke kicker
         counts = Counter(cards)
         if '*' in cards and '$' in cards:
-            candidates.append((CardGroup(['*', '$'], 'bigbang', 100)))
+            candidates.append((CardGroup(['*', '$'], Category.BIGBANG, 100)))
             # cards.remove('*')
             # cards.remove('$')
 
@@ -391,7 +387,7 @@ class CardGroup:
         for c in counts:
             if counts[c] == 4:
                 quadrics.append(c)
-                candidates.append(CardGroup([c] * 4, 'bomb', Card.to_value(c)))
+                candidates.append(CardGroup([c] * 4, Category.QUADRIC, Card.to_value(c)))
                 cards = list(filter(lambda a: a != c, cards))
 
         counts = Counter(cards)
@@ -415,13 +411,13 @@ class CardGroup:
                     cnt += 1
                 else:
                     if cnt >= 5:
-                        candidates.append(CardGroup(cand, 'single_seq', Card.to_value(cand[0])))
+                        candidates.append(CardGroup(cand, Category.SINGLE_LINE, Card.to_value(cand[0]), cnt))
                         # for c in cand:
                         #     cards.remove(c)
                     cand = [singles[i]]
                     cnt = 1
             if cnt >= 5:
-                candidates.append(CardGroup(cand, 'single_seq', Card.to_value(cand[0])))
+                candidates.append(CardGroup(cand, Category.SINGLE_LINE, Card.to_value(cand[0]), cnt))
                 # for c in cand:
                 #     cards.remove(c)
 
@@ -436,17 +432,17 @@ class CardGroup:
                     cnt += 1
                 else:
                     if cnt >= 3:
-                        candidates.append(CardGroup(cand, 'double_seq', Card.to_value(cand[0])))
+                        candidates.append(CardGroup(cand, Category.DOUBLE_LINE, Card.to_value(cand[0]), cnt))
                         # for c in cand:
-                            # if c in cards:
-                            #     cards.remove(c)
+                        # if c in cards:
+                        #     cards.remove(c)
                     cand = [doubles[i]] * 2
                     cnt = 1
             if cnt >= 3:
-                candidates.append(CardGroup(cand, 'double_seq', Card.to_value(cand[0])))
+                candidates.append(CardGroup(cand, Category.DOUBLE_LINE, Card.to_value(cand[0]), cnt))
                 # for c in cand:
-                    # if c in cards:
-                    #     cards.remove(c)
+                # if c in cards:
+                #     cards.remove(c)
 
         if len(triples) > 0:
             cnt = 1
@@ -459,20 +455,20 @@ class CardGroup:
                     cnt += 1
                 else:
                     if cnt >= 2:
-                        candidates.append(CardGroup(cand, 'triple_seq', Card.to_value(cand[0])))
+                        candidates.append(CardGroup(cand, Category.TRIPLE_LINE, Card.to_value(cand[0]), cnt))
                         # for c in cand:
                         #     if c in cards:
                         #         cards.remove(c)
                     cand = [triples[i]] * 3
                     cnt = 1
             if cnt >= 2:
-                candidates.append(CardGroup(cand, 'triple_seq', Card.to_value(cand[0])))
+                candidates.append(CardGroup(cand, Category.TRIPLE_LINE, Card.to_value(cand[0]), cnt))
                 # for c in cand:
                 #     if c in cards:
                 #         cards.remove(c)
 
         for t in triples:
-            candidates.append(CardGroup([t] * 3, 'triple', Card.to_value(t)))
+            candidates.append(CardGroup([t] * 3, Category.TRIPLE, Card.to_value(t)))
 
         counts = Counter(cards)
         singles = [c for c in counts if counts[c] == 1]
@@ -480,60 +476,63 @@ class CardGroup:
 
         # single
         for s in singles:
-            candidates.append(CardGroup([s], 'single', Card.to_value(s)))
+            candidates.append(CardGroup([s], Category.SINGLE, Card.to_value(s)))
 
         # double
         for d in doubles:
-            candidates.append(CardGroup([d] * 2, 'double', Card.to_value(d)))
+            candidates.append(CardGroup([d] * 2, Category.DOUBLE, Card.to_value(d)))
 
         # 3 + 1, 3 + 2
         for c in triples:
             triple = [c] * 3
             for s in singles:
                 if s not in triple:
-                    candidates.append(CardGroup(triple + [s], 'triple+single',
+                    candidates.append(CardGroup(triple + [s], Category.THREE_ONE,
                                                 Card.to_value(c)))
             for d in doubles:
                 if d not in triple:
-                    candidates.append(CardGroup(triple + [d] * 2, 'triple+double',
+                    candidates.append(CardGroup(triple + [d] * 2, Category.THREE_TWO,
                                                 Card.to_value(c)))
 
         # 4 + 2
         for c in quadrics:
             for extra in list(itertools.combinations(singles, 2)):
-                candidates.append(CardGroup([c] * 4 + list(extra), 'quadric+singles',
+                candidates.append(CardGroup([c] * 4 + list(extra), Category.FOUR_TAKE_ONE,
                                             Card.to_value(c)))
             for extra in list(itertools.combinations(doubles, 2)):
-                candidates.append(CardGroup([c] * 4 + list(extra) * 2, 'quadric+doubles',
+                candidates.append(CardGroup([c] * 4 + list(extra) * 2, Category.FOUR_TAKE_TWO,
                                             Card.to_value(c)))
         # 3 * n + n, 3 * n + 2 * n
-        triple_seq = [c.cards for c in candidates if c.type == 'triple_seq']
+        triple_seq = [c.cards for c in candidates if c.type == Category.TRIPLE_LINE]
         for cand in triple_seq:
             cnt = int(len(cand) / 3)
             for extra in list(itertools.combinations(singles, cnt)):
                 candidates.append(
-                    CardGroup(cand + list(extra), 'triple_seq+singles',
-                              Card.to_value(cand[0])))
+                    CardGroup(cand + list(extra), Category.THREE_ONE_LINE,
+                              Card.to_value(cand[0]), cnt))
             for extra in list(itertools.combinations(doubles, cnt)):
                 candidates.append(
-                    CardGroup(cand + list(extra) * 2, 'triple_seq+doubles',
-                              Card.to_value(cand[0])))
+                    CardGroup(cand + list(extra) * 2, Category.THREE_TWO_LINE,
+                              Card.to_value(cand[0]), cnt))
 
-        importance = ['empty', 'single', 'double', 'double_seq', 'single_seq', 'triple+single',
-                      'triple+double', 'triple_seq+singles', 'triple_seq+doubles',
-                      'triple_seq', 'triple', 'quadric+singles', 'quadric+doubles',
-                      'bomb', 'bigbang']
+        importance = [Category.EMPTY, Category.SINGLE, Category.DOUBLE, Category.DOUBLE_LINE, Category.SINGLE_LINE,
+                      Category.THREE_ONE,
+                      Category.THREE_TWO, Category.THREE_ONE_LINE, Category.THREE_TWO_LINE,
+                      Category.TRIPLE_LINE, Category.TRIPLE, Category.FOUR_TAKE_ONE, Category.FOUR_TAKE_TWO,
+                      Category.QUADRIC, Category.BIGBANG]
         candidates.sort(key=functools.cmp_to_key(lambda x, y: importance.index(x.type) - importance.index(y.type)
-                        if importance.index(x.type) != importance.index(y.type) else x.value - y.value))
+        if importance.index(x.type) != importance.index(y.type) else x.value - y.value))
         # for c in candidates:
         #     print c.cards
         return candidates
+
 
 action_space = get_action_space()
 action_space_onehot60 = np.array([Card.char2onehot60(a) for a in action_space])
 action_space_category = [action_space[r[0]:r[1]] for r in Category2Range]
 
-augment_action_space = action_space + action_space_category[Category.SINGLE][:13] * 3 + action_space_category[Category.DOUBLE]
+augment_action_space = action_space + action_space_category[Category.SINGLE][:13] * 3 + action_space_category[
+    Category.DOUBLE]
 
 extra_actions = []
 for j in range(3):
@@ -573,7 +572,7 @@ if __name__ == '__main__':
     #     assert len(a) <= 20
     #     if len(a) > 0:
     #         CardGroup.to_cardgroup(a)
-        # print(a)
+    # print(a)
     # print(action_space_category[Category.SINGLE_LINE.value])
     # print(action_space_category[Category.DOUBLE_LINE.value])
     # print(action_space_category[Category.THREE_ONE.value])
