@@ -22,7 +22,7 @@ logger = logging.getLogger('ddz')
 
 
 class AiPlayer(Player):
-    MCT_THRESH = 5
+    MCT_THRESH = 0
 
     def __init__(self, uid: int, username: str, player: Player):
         from handlers.loopback import LoopBackSocketHandler
@@ -60,7 +60,7 @@ class AiPlayer(Player):
                 self.table.lord_turn = self.table.whose_turn
                 self.auto_shot_poker()
         elif code == Pt.RSP_SHOT_POKER:
-            if self.table.turn_player == self:
+            if self.table.turn_player == self and not self.table.game_over:
                 self.auto_shot_poker()
         elif code == Pt.RSP_GAME_OVER:
             winner = packet[1]
@@ -110,7 +110,8 @@ class AiPlayer(Player):
             return [to_char(int(c) + 3) for c in cg.cards]
 
         handcards_char = pokers_to_char(self.hand_pokers)
-        if len(handcards_char) <= AiPlayer.MCT_THRESH:
+        total_cards_cnt = sum([len(self.table.players[i].hand_pokers) for i in range(3)])
+        if total_cards_cnt <= AiPlayer.MCT_THRESH:
             chandcards = [CCard(to_value(c) - 3) for c in handcards_char]
             unseen_cards = pokers_to_char(self.table.players[(self.table.whose_turn + 1) % 3].hand_pokers + self.table.players[(self.table.whose_turn + 2) % 3].hand_pokers)
             cunseen_cards = [CCard(to_value(c) - 3) for c in unseen_cards]
@@ -120,7 +121,7 @@ class AiPlayer(Player):
             last_cg = char2ccardgroup(pokers_to_char(last_shot_poker))
             if not self.table.controller:
                 self.table.controller = self.table.whose_turn
-            caction = mcsearch(chandcards, cunseen_cards, next_handcards_cnt, last_cg, (self.table.whose_turn - self.table.lord_turn + 3) % 3, (self.table.controller - self.table.lord_turn + 3) % 3)
+            caction = mcsearch(chandcards, cunseen_cards, next_handcards_cnt, last_cg, (self.table.whose_turn - self.table.lord_turn + 3) % 3, (self.table.controller - self.table.lord_turn + 3) % 3, 10, 50, 500)
             intention = ccardgroup2char(caction)
         else:
             last_two_cards = self.table.get_last_two_cards()

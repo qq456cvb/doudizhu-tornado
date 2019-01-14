@@ -5,7 +5,7 @@ if os.name == 'nt':
     sys.path.insert(0, '../../build/Release')
 else:
     sys.path.insert(0, '../../build.linux')
-sys.path.insert(0, '/home/neil/PycharmProjects/doudizhu-tornado/build')
+sys.path.insert(0, './build')
 from env import get_combinations_nosplit, get_combinations_recursive
 from logger import Logger
 from utils import to_char
@@ -14,13 +14,14 @@ import numpy as np
 import tensorflow as tf
 from utils import get_mask, get_minor_cards, train_fake_action_60, get_masks, test_fake_action
 from utils import get_seq_length, pick_minor_targets, to_char, to_value, get_mask_alter, get_mask_onehot60
+import config
 
 
 class Predictor:
     def __init__(self, predictor):
         self.predictor = predictor
-        self.num_actions = [100, 21]
-        self.encoding = np.load('/home/neil/PycharmProjects/doudizhu-tornado/TensorPack/AutoEncoder/encoding.npy')
+        self.num_actions = [config.NUM_COMBS, 21]
+        self.encoding = np.load('./TensorPack/AutoEncoder/encoding.npy')
         print('predictor loaded')
 
     def pad_state(self, state):
@@ -170,7 +171,6 @@ class Predictor:
         state, available_actions, fine_mask = self.get_state_and_action_space(True, curr_cards_char=handcards, last_two_cards_char=last_two_cards, prob_state=prob_state)
         # print(available_actions)
         q_values = self.predictor(state[None, :, :, :], np.array([True]), np.array([fine_mask_input]))[0][0]
-        # print(q_values)
         action = np.argmax(q_values)
         assert action < self.num_actions[0]
         sorted_idx = np.argsort(q_values)

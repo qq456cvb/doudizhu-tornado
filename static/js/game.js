@@ -1,4 +1,5 @@
-
+LEFT_ROBOT_UID = - 12;
+RIGHT_ROBOT_UID = - 11;
 PG.Game = function(game) {
 
     this.roomId = 1;
@@ -196,8 +197,9 @@ PG.Game.prototype = {
         this.players.push(PG.createPlay(0, this));
         this.players.push(PG.createPlay(1, this));
         this.players.push(PG.createPlay(2, this));
-        player_id = [1, 11, 12];
-        for (var i = 0; i < 3; i++) {
+        player_id = [1, RIGHT_ROBOT_UID, LEFT_ROBOT_UID];
+        this.players[0].updateInfo(PG.playerInfo.uid, PG.playerInfo.username);
+        for (var i = 1; i < 3; i++) {
             //this.players[i].uiHead.kill();
             this.players[i].updateInfo(player_id[i], ' ');
         }

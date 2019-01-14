@@ -28,6 +28,7 @@ function init_charts() {
 }
 
 function draw_comb(combinations) {
+    return;
     if (myChart == null) {
         init_charts();
     }
@@ -103,6 +104,7 @@ function draw_comb(combinations) {
 }
 
 function draw_fine(groups) {
+    return;
     if (myChart == null) {
         init_charts();
     }

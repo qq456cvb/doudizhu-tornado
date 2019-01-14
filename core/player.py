@@ -67,6 +67,7 @@ class Player(object):
     def handle_shot_poker(self, pokers):
         self.become_controller = False
         self.table.out_cards[self.table.whose_turn] = pokers
+        self.table.log.append((self.uid, pokers))
         if pokers:
             if not rule.is_contains(self.hand_pokers, pokers):
                 logger.warning('Player[%d] play non-exist poker', self.uid)
@@ -91,14 +92,14 @@ class Player(object):
             self.table.on_game_over(self)
             return
 
+        if not self.hand_pokers:
+            self.table.game_over = True
+            self.table.on_game_over(self)
+
         response = [Pt.RSP_SHOT_POKER, self.uid, pokers]
         for p in self.table.players:
             p.send(response)
         logger.info('Player[%d] shot[%s]', self.uid, str(pokers))
-
-        if not self.hand_pokers:
-            self.table.on_game_over(self)
-            return
 
     def join_table(self, t):
         self.ready = True

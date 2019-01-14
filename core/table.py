@@ -1,5 +1,6 @@
 import logging
 import random
+import core.rule as rule
 from typing import List
 
 from tornado.ioloop import IOLoop
@@ -10,15 +11,15 @@ from core.predictor import Predictor
 from tensorpack import *
 from core.DQNModel import Model
 
+from config import *
+
 logger = logging.getLogger('ddz')
 
 
 BATCH_SIZE = 8
-MAX_NUM_COMBS = 100
-MAX_NUM_GROUPS = 21
 ATTEN_STATE_SHAPE = 60
 HIDDEN_STATE_DIM = 256 + 256 * 2 + 120
-STATE_SHAPE = (MAX_NUM_COMBS, MAX_NUM_GROUPS, HIDDEN_STATE_DIM)
+STATE_SHAPE = (NUM_COMBS, 21, HIDDEN_STATE_DIM)
 ACTION_REPEAT = 4   # aka FRAME_SKIP
 UPDATE_FREQ = 4
 
@@ -29,12 +30,12 @@ INIT_MEMORY_SIZE = MEMORY_SIZE // 10
 STEPS_PER_EPOCH = 10000 // UPDATE_FREQ  # each epoch is 100k played frames
 EVAL_EPISODE = 50
 
-NUM_ACTIONS = None
+NUM_ACTIONS = max(NUM_COMBS, 21)
 METHOD = None
-MODEL_PATH = '/home/neil/PycharmProjects/doudizhu-tornado/TensorPack/MA_Hierarchical_Q/train_log/model-500000'
+MODEL_PATH = './core/res/model-302500'
+
 
 class Table(object):
-
     WAITING = 0
     PLAYING = 1
     END = 2
@@ -57,8 +58,29 @@ class Table(object):
         self.controller = None
         self.last_shot_poker = []
         self.history = [None, None, None]
+        self.log = []
+        self.game_over = False
         if room.allow_robot:
             IOLoop.current().call_later(0.1, self.ai_join, nth=1)
+        agent_names = ['agent%d' % i for i in range(1, 4)]
+        self.predictor_agent1 = Predictor(OfflinePredictor(PredictConfig(
+            model=Model(agent_names, STATE_SHAPE, METHOD, NUM_ACTIONS, GAMMA),
+            session_init=SaverRestore(MODEL_PATH),
+            input_names=['agent1' + '/state', 'agent1' + '_comb_mask', 'agent1' + '/fine_mask'],
+            output_names=['agent1' + '/Qvalue']
+        )))
+        self.predictor_agent2 = Predictor(OfflinePredictor(PredictConfig(
+            model=Model(agent_names, STATE_SHAPE, METHOD, NUM_ACTIONS, GAMMA),
+            session_init=SaverRestore(MODEL_PATH),
+            input_names=['agent2' + '/state', 'agent2' + '_comb_mask', 'agent2' + '/fine_mask'],
+            output_names=['agent2' + '/Qvalue']
+        )))
+        self.predictor_agent3 = Predictor(OfflinePredictor(PredictConfig(
+            model=Model(agent_names, STATE_SHAPE, METHOD, NUM_ACTIONS, GAMMA),
+            session_init=SaverRestore(MODEL_PATH),
+            input_names=['agent3' + '/state', 'agent3' + '_comb_mask', 'agent3' + '/fine_mask'],
+            output_names=['agent3' + '/Qvalue']
+        )))
 
     def reset(self):
         self.out_cards = [[] for _ in range(3)]
@@ -73,6 +95,7 @@ class Table(object):
         self.last_shot_seat = 0
         self.last_shot_poker = []
         self.players[0].send([Pt.RSP_RESTART])
+        self.game_over = False
         for h in self.history:
             if h is not None:
                 h.clear()
@@ -92,11 +115,11 @@ class Table(object):
         if size == 2 and nth == 1:
             IOLoop.current().call_later(1, self.ai_join, nth=2)
 
-        p1 = AiPlayer(11, 'IDIOT-I', self.players[0])
+        p1 = AiPlayer(RIGHT_ROBOT_UID, 'IDIOT-I', self.players[0])
         p1.to_server([Pt.REQ_JOIN_TABLE, self.uid])
 
         if size == 1:
-            p2 = AiPlayer(12, 'IDIOT-II', self.players[0])
+            p2 = AiPlayer(LEFT_ROBOT_UID, 'IDIOT-II', self.players[0])
             p2.to_server([Pt.REQ_JOIN_TABLE, self.uid])
 
     def sync_table(self):
@@ -140,39 +163,25 @@ class Table(object):
         # assign models for AI
         this_agent_idx = 0
         next_agent_idx = 0
-        if self.turn_player.uid == 11:
+        if self.turn_player.uid == RIGHT_ROBOT_UID:
             this_agent_idx = self.whose_turn
-            while self.players[next_agent_idx].uid != 12:
+            while self.players[next_agent_idx].uid != LEFT_ROBOT_UID:
                 next_agent_idx += 1
-            this_agent_name = 'agent1'
-            next_agent_name = 'agent2'
-        elif self.turn_player == 12:
+            self.players[this_agent_idx].predictor = self.predictor_agent1
+            self.players[next_agent_idx].predictor = self.predictor_agent2
+        elif self.turn_player == LEFT_ROBOT_UID:
             this_agent_idx = self.whose_turn
-            while self.players[next_agent_idx].uid != 11:
+            while self.players[next_agent_idx].uid != RIGHT_ROBOT_UID:
                 next_agent_idx += 1
-            this_agent_name = 'agent1'
-            next_agent_name = 'agent3'
+            self.players[this_agent_idx].predictor = self.predictor_agent1
+            self.players[next_agent_idx].predictor = self.predictor_agent3
         else:
-            while self.players[next_agent_idx].uid != 12:
+            while self.players[next_agent_idx].uid != LEFT_ROBOT_UID:
                 next_agent_idx += 1
-            while self.players[this_agent_idx].uid != 11:
+            while self.players[this_agent_idx].uid != RIGHT_ROBOT_UID:
                 this_agent_idx += 1
-            this_agent_name = 'agent2'
-            next_agent_name = 'agent3'
-
-        agent_names = ['agent%d' % i for i in range(1, 4)]
-        self.players[this_agent_idx].predictor = Predictor(OfflinePredictor(PredictConfig(
-            model=Model(agent_names, STATE_SHAPE, METHOD, NUM_ACTIONS, GAMMA),
-            session_init=SaverRestore(MODEL_PATH),
-            input_names=[this_agent_name + '/state', this_agent_name + '_comb_mask', this_agent_name + '/fine_mask'],
-            output_names=[this_agent_name + '/Qvalue']
-        )))
-        self.players[next_agent_idx].predictor = Predictor(OfflinePredictor(PredictConfig(
-            model=Model(agent_names, STATE_SHAPE, METHOD, NUM_ACTIONS, GAMMA),
-            session_init=SaverRestore(MODEL_PATH),
-            input_names=[next_agent_name + '/state', next_agent_name + '_comb_mask', next_agent_name + '/fine_mask'],
-            output_names=[next_agent_name + '/Qvalue']
-        )))
+            self.players[this_agent_idx].predictor = self.predictor_agent2
+            self.players[next_agent_idx].predictor = self.predictor_agent3
 
     def go_next_turn(self):
         if self.turn_player.become_controller:
@@ -222,6 +231,26 @@ class Table(object):
                 if pp != p:
                     response.append([pp.uid, *pp.hand_pokers])
             p.send(response)
+
+        def pokers_to_char(cards):
+            cards = rule._to_cards(cards)
+            for i, card in enumerate(cards):
+                if card == 'w':
+                    cards[i] = '*'
+                elif card == 'W':
+                    cards[i] = '$'
+                elif card == '0':
+                    cards[i] = '10'
+            return cards
+
+        def parselog2txt():
+            with open('./core/log/%d.txt' % self.uid, 'a+') as f:
+                for record in self.log:
+                    f.write(str(record[0]) + ' ' + ','.join(pokers_to_char(record[1])) + '\n')
+                f.write('game over\n')
+
+        parselog2txt()
+        self.log = []
         # TODO deduct coin from database
         # TODO store poker round to database
         logger.info('Table[%d] GameOver[%d]', self.uid, self.uid)
