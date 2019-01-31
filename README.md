@@ -1,4 +1,6 @@
 # 斗地主
+This repo is adapted from https://github.com/mailgyc/doudizhu
+
 斗地主游戏, html5, python, mysql 实现
 
 [![Build Status](https://travis-ci.org/mailgyc/doudizhu.svg?branch=master)](https://travis-ci.org/mailgyc)
