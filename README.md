@@ -20,8 +20,6 @@ This repo is adapted from https://github.com/mailgyc/doudizhu
 
 浏览器访问即可,端口默认8080
 
-在线体验 <http://m.ihouser.com/>
-
 运行截图
 
 ![](https://raw.githubusercontent.com/mailgyc/doudizhu/master/screenshot/a.png)
