@@ -1,3 +1,46 @@
+# doudizhu-tornado
+
+<!-- README refined by Cursor -->
+
+A Tornado-based Dou Di Zhu mini-server adapted for interactive play.
+
+## Overview
+
+This repository contains Python, JavaScript, HTML code from an older research, course, or prototype project. The README has been refreshed to make the repository easier to scan while preserving the original notes below.
+
+## Repository Contents
+
+- `core/`
+- `db/`
+- `handlers/`
+- `screenshot/`
+- `settings/`
+- `static/`
+- `templates/`
+- `tests/`
+
+## Setup
+
+- Install Python dependencies with `pip install -r requirements.txt`.
+
+## Usage
+
+- inspect the top-level Python entry points: `__init__.py`, `app.py`, `captcha.py`, `config.py`, `debug.py`
+
+## Data and Artifacts
+
+No new large artifact is stored in this repository. If a dataset or checkpoint is required, follow the links and notes in the original section below.
+
+## Status
+
+This is a `Batch B` cleanup pass for a legacy repository. Commands may require dependency/version adjustments on a modern machine.
+
+## License
+
+No explicit license file was found in this checkout; check the original project context before reusing code.
+
+## Original Notes
+
 # 斗地主
 This repo is adapted from https://github.com/mailgyc/doudizhu
 
