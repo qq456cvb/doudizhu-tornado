@@ -1,70 +1,86 @@
 # doudizhu-tornado
 
-<!-- README refined by Cursor -->
+Play **Dou Di Zhu** (斗地主, "Fight the Landlord") in your browser against the deep reinforcement learning agents from [doudizhu-C](https://github.com/qq456cvb/doudizhu-C) — the Combinatorial Q-Learning (CQL) agents published at [AIIDE 2020](https://ojs.aaai.org/index.php/AIIDE/article/view/7445).
 
-A Tornado-based Dou Di Zhu mini-server adapted for interactive play.
+This is an adaptation of [mailgyc/doudizhu](https://github.com/mailgyc/doudizhu) (an HTML5 + Tornado + MySQL Dou Di Zhu game): the original scripted bots are replaced with trained CQL agents, so the two robot seats at the table are driven by the neural network.
 
-## Overview
+![](screenshot/a.png)
+![](screenshot/c.png)
+![](screenshot/d.png)
 
-This repository contains Python, JavaScript, HTML code from an older research, course, or prototype project. The README has been refreshed to make the repository easier to scan while preserving the original notes below.
+## How It Works
 
-## Repository Contents
-
-- `core/`
-- `db/`
-- `handlers/`
-- `screenshot/`
-- `settings/`
-- `static/`
-- `templates/`
-- `tests/`
+- **Frontend** (`static/`, `templates/poker.html`) — a [Phaser](https://phaser.io/) HTML5 client that talks to the server over a WebSocket (`/ws`).
+- **Server** (`app.py`, `handlers/`, `core/`) — a Tornado application managing rooms and tables (`core/room.py`, `core/table.py`), game rules (`core/rule.py`), and user accounts backed by MySQL (`schema.sql`).
+- **AI players** (`core/robot.py`, `core/predictor.py`, `core/DQNModel.py`) — each table loads Tensorpack `OfflinePredictor`s with the CQL Dueling-DQN network. At every turn the agent enumerates card-group decompositions of its hand (via the compiled `env` module from doudizhu-C), encodes them with pretrained auto-encoder embeddings (`core/res/encoding.npy`), and picks the best move with its two-stage Q-network. AI players join through a loopback socket (`handlers/loopback.py`) and behave exactly like remote clients.
+- An endgame Monte-Carlo tree search (`mct` from [doudizhu-baseline](https://github.com/qq456cvb/doudizhu-baseline)) is wired into `core/robot.py` but disabled by default (`MCT_THRESH = 0`).
 
 ## Setup
 
-- Install Python dependencies with `pip install -r requirements.txt`.
+Tested with Python 3.6, TensorFlow 1.x and Tensorpack (same environment as [doudizhu-C](https://github.com/qq456cvb/doudizhu-C#installation)).
 
-## Usage
+### 1. Python dependencies
 
-- inspect the top-level Python entry points: `__init__.py`, `app.py`, `captcha.py`, `config.py`, `debug.py`
+```bash
+pip3 install -r requirements.txt
+pip3 install tensorflow==1.13.1 tensorpack==0.8.5
+```
 
-## Data and Artifacts
+### 2. MySQL
 
-No new large artifact is stored in this repository. If a dataset or checkpoint is required, follow the links and notes in the original section below.
+Create the database and tables:
 
-## Status
+```bash
+mysql --user=root -p < schema.sql
+```
 
-This is a `Batch B` cleanup pass for a legacy repository. Commands may require dependency/version adjustments on a modern machine.
+### 3. Compiled game engine
 
-## License
+The AI imports the C++ `env` module built from doudizhu-C (and optionally `mct` from doudizhu-baseline for the MCTS endgame solver). Build doudizhu-C following [its instructions](https://github.com/qq456cvb/doudizhu-C#installation) and copy the resulting Python extension(s) into a `build/` folder at this repository's root:
 
-No explicit license file was found in this checkout; check the original project context before reusing code.
+```
+doudizhu-tornado/
+└── build/
+    ├── env.cpython-36m-x86_64-linux-gnu.so   # from doudizhu-C
+    └── mct.cpython-36m-x86_64-linux-gnu.so   # optional, from doudizhu-baseline
+```
 
-## Original Notes
+### 4. Pretrained model
 
-# 斗地主
-This repo is adapted from https://github.com/mailgyc/doudizhu
+Download the CQL checkpoint from [Hugging Face](https://huggingface.co/qq456cvb/doudizhu-C) into `core/res/` (the server loads `core/res/model-302500`):
 
-斗地主游戏, html5, python, mysql 实现
+```bash
+hf download qq456cvb/doudizhu-C model-302500.index model-302500.data-00000-of-00001 --local-dir core/res
+```
 
-[![Build Status](https://travis-ci.org/mailgyc/doudizhu.svg?branch=master)](https://travis-ci.org/mailgyc)
-[![Coverage Status](https://coveralls.io/repos/github/mailgyc/doudizhu/badge.svg?branch=master)](https://coveralls.io/github/mailgyc/doudizhu?branch=master)
+A [Google Drive mirror](https://drive.google.com/drive/folders/1YTNR5JYNgNfQpQ9DwhQ3ClcyeXKn_17b?usp=sharing) is also available. The auto-encoder card embeddings (`core/res/encoding.npy`) already ship with this repository.
 
-运行步骤:
+## Run
 
-1.安装MySQL数据库, 执行:
+```bash
+python3 app.py --password=your_database_password
+```
 
-    mysql --user=root -p < schema.sql
+Then open `http://localhost:8080` in a browser (use `--port` to change the port; see `settings/base.py` for all options). Register an account, sit at a table, and two AI players will join automatically.
 
-2.安装Python3.6, 执行:
+## Related Projects
 
-    pip3 install -r requirements.txt
+- [doudizhu-C](https://github.com/qq456cvb/doudizhu-C) — training code and pretrained models for the CQL agents (AIIDE 2020).
+- [doudizhu-baseline](https://github.com/qq456cvb/doudizhu-baseline) — Monte-Carlo-Tree-Search baseline used for the optional endgame solver.
+- [mailgyc/doudizhu](https://github.com/mailgyc/doudizhu) — the original web game this server is adapted from.
 
-    python3 app.py --password=your_database_password
+## Citation
 
-浏览器访问即可,端口默认8080
+If you use the agents in your work, please consider citing:
 
-运行截图
-
-![](https://raw.githubusercontent.com/mailgyc/doudizhu/master/screenshot/a.png)
-![](https://raw.githubusercontent.com/mailgyc/doudizhu/master/screenshot/c.png)
-![](https://raw.githubusercontent.com/mailgyc/doudizhu/master/screenshot/d.png)
+```bibtex
+@inproceedings{you2020combinatorial,
+  title={Combinatorial Q-Learning for Dou Di Zhu},
+  author={You, Yang and Li, Liangwei and Guo, Baisong and Wang, Weiming and Lu, Cewu},
+  booktitle={Proceedings of the AAAI Conference on Artificial Intelligence and Interactive Digital Entertainment},
+  volume={16},
+  number={1},
+  pages={301--307},
+  year={2020}
+}
+```

@@ -12,7 +12,7 @@ from handlers.protocol import Protocol as Pt
 import numpy as np
 import collections
 import sys
-sys.path.insert(0, '/home/neil/PycharmProjects/doudizhu-tornado/build')
+sys.path.insert(0, './build')
 from mct import mcsearch, CCard, CCardGroup, CCategory
 from utils import to_char, to_value
 

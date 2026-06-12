@@ -7,7 +7,6 @@ else:
     sys.path.insert(0, '../../build.linux')
 sys.path.insert(0, './build')
 from env import get_combinations_nosplit, get_combinations_recursive
-from logger import Logger
 from utils import to_char
 from core.extra.card import Card, action_space, action_space_onehot60, Category, CardGroup, augment_action_space_onehot60, augment_action_space, clamp_action_idx
 import numpy as np
@@ -21,7 +20,7 @@ class Predictor:
     def __init__(self, predictor):
         self.predictor = predictor
         self.num_actions = [config.NUM_COMBS, 21]
-        self.encoding = np.load('./TensorPack/AutoEncoder/encoding.npy')
+        self.encoding = np.load('./core/res/encoding.npy')
         print('predictor loaded')
 
     def pad_state(self, state):
